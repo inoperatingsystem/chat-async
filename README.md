@@ -72,3 +72,29 @@ Both the server and client are using the same WebSocket protocol. The protocol i
 ### Client 3
 
 ![Client3](images/2.2_client3.png)
+
+## 2.3. Small changes. Add some information to client  
+
+To identify who sent each chat message, the sender's dynamic socket address (`IP:Port`) is now attached to all broadcasted messages.
+
+### Why and Where the Modifications Were Made:
+
+1. **Server-Side ([src/bin/server.rs](./src/bin/server.rs))**
+
+   - **Why:** The server is the only entity that has direct access to the connection metadata (the client's unique `addr: SocketAddr`) for each active socket. Therefore, it is the best place to attach this metadata to the message *before* it is sent to the broadcast channel.
+
+   - **Where:** Inside `handle_connection`, changed the broadcast line to:
+
+     ```rust
+     bcast_tx.send(format!("[{addr}] {text}"))?;
+     ```
+
+2. **Client-Side ([src/bin/client.rs](./src/bin/client.rs))**
+
+   - **Why:** Hardcoding a prefix like `From server:` on the client side caused all user messages to look like they originated from the server. The client is modified to print the incoming payload directly, allowing messages (both chat messages and server greeting messages) to render cleanly and correctly.
+
+   - **Where:** Inside the selection loop, changed the output to:
+
+     ```rust
+     println!("{}", text);
+     ```
