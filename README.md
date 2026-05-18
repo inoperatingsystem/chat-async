@@ -98,3 +98,5 @@ To identify who sent each chat message, the sender's dynamic socket address (`IP
      ```rust
      println!("{}", text);
      ```
+
+![Client3](images/2.3.png)
