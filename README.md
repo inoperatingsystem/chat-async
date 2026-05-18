@@ -50,3 +50,25 @@ When a client types some text in their terminal and presses **Enter**:
 ### Client 3
 
 ![Client3](images/2.1_client3.png)
+
+## 2.2. Modyfing the Websocket Port
+
+To modify the connection port to `8080`, changes are required on both sides of the connection: the server side and the client side. On the server side, in [src/bin/server.rs](./src/bin/server.rs), the [TcpListener](./src/bin/server.rs#L5) is modified to bind to `"127.0.0.1:8080"`. On the client side, in [src/bin/client.rs](./src/bin/client.rs), the [ClientBuilder](./src/bin/client.rs#L5) is modified to connect to `"ws://127.0.0.1:8080"`.
+
+Both the server and client are using the same WebSocket protocol. The protocol is initiated on the client side using the `"ws://"` URI scheme, and on the server side, the raw TCP stream accepted from [TcpListener](./src/bin/server.rs#L5) is upgraded to a WebSocket connection using [ServerBuilder](./src/bin/server.rs#L7). This protocol standard is defined and implemented by the `tokio-websockets` library specified in the project's [Cargo.toml](./Cargo.toml).
+
+### Server
+
+![Server](images/2.2_server.png)
+
+### Client 1
+
+![Client1](images/2.2_client1.png)
+
+### Client 2
+
+![Client2](images/2.2_client2.png)
+
+### Client 3
+
+![Client3](images/2.2_client3.png)
