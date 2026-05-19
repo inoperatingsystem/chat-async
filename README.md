@@ -5,15 +5,40 @@ Julius Albert Wirayuda
 
 ## How to Run
 
-1. **Start the Server**:
-   Open a terminal window and run the following command to start the broadcast chat server:
+### Option A: Running with the YewChat Web Client (Recommended)
+
+1. **Start the Rust WebSocket Server**:
+   From this directory (`chat-async`), run:
 
    ```bash
    cargo run --bin server
    ```
 
-2. **Start the Clients**:
-   Open multiple separate terminals (e.g., three separate tabs) and run the client binary in each of them:
+   This launches the WebSocket server listening on `127.0.0.1:8080`.
+
+2. **Start the YewChat Web Client**:
+   Navigate to the YewChat directory and start the frontend development server:
+
+   ```bash
+   cd ../YewChat
+   npm start
+   ```
+
+3. **Open the Web Chat**:
+   Open your browser and navigate to [http://localhost:8000](http://localhost:8000). You can open multiple tabs to log in as different users and test live chatting!
+
+---
+
+### Option B: Running with the Console-based Terminal Clients
+
+1. **Start the Rust WebSocket Server**:
+
+   ```bash
+   cargo run --bin server
+   ```
+
+2. **Start the Console Clients**:
+   Open multiple separate terminal tabs/windows and run the client binary in each of them:
 
    ```bash
    cargo run --bin client
@@ -100,3 +125,27 @@ To identify who sent each chat message, the sender's dynamic socket address (`IP
      ```
 
 ![Client3](images/2.3.png)
+
+## Bonus: Change the Websocket Server
+
+### How It Was Done
+
+1. **Dependency Integration:** Added `serde` (with `derive` feature) and `serde_json` to `Cargo.toml` to support structured serialization/deserialization.
+2. **Schema Matching:** Modeled the YewChat JSON protocol using Rust structs with `#[serde(rename_all = "camelCase")]` (e.g., mapping `message_type` to `messageType` and `data_array` to `dataArray`).
+3. **State Management:** Introduced a shared `Arc<AppState>` with `RwLock<HashMap<SocketAddr, String>>` to map active TCP sockets to user nicknames.
+4. **Logic Revamp:** Revamped `handle_connection`'s loop to deserialize incoming WebSocket text frames, process type-specific actions (`Register` stores the username; `Message` performs double-serialization of inner chat payloads), and broadcast the serialized payload.
+5. **Immediate Cleanup:** Leveraged the termination of the socket connection loop to immediately prune users and broadcast the updated traveler list, bypassing the need for timed interval check-ins.
+
+### Why It Is a Successful Change
+
+* **Protocol Decoupling:** The Yew WASM webclient remains entirely unchanged. Since WebSockets transmit transport-agnostic text frames, as long as our Rust server conforms to the expected JSON schema, the client connects and interacts seamlessly.
+* **Instant Disconnection Detection:** Rather than relying on a 5-second polling interval to clean up inactive users (like the JS version), the Rust server uses Tokio's stream tracking to detect connection dropouts instantly at the socket level.
+
+### Personal Opinion: JavaScript vs. Rust Version
+
+Personally, I prefer the rust production for production environments:
+
+- **Compile-Time Correctness:** Serde guarantees type-safe JSON boundary validation at compile time. In JS, a typo in the JSON schema fails silently at runtime, whereas Rust enforces protocol compliance statically.
+- **Fearless Concurrency & Performance:** Tokio's multi-threaded work-stealing runtime paired with an `Arc<RwLock<...>>` state model provides memory-safe, data-race-free parallelism.
+- **Zero Runtime Overhead:** Rust compiles down to a single lightweight, high-performance static binary with zero GC pauses or heavy `node_modules` dependencies, making it vastly superior for deployment pipelines and containerization.
+- *However*, JavaScript is admittedly more frictionless for rapid prototyping since there is no compiler friction, dynamic typing makes structural iteration incredibly fast, and `nodemon` provides an excellent live-reload loop.
